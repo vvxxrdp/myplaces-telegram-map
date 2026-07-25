@@ -4,60 +4,65 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
-  
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css" />
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; }
-    .popup-title { font-weight: 700; margin-bottom: 6px; }
+
+    .place-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.85);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      background: rgba(255,255,255,0.08);
+    }
+    .place-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .popup-link { display: inline-block; margin-top: 6px; color: #2ea8ff; text-decoration: none; }
+    .popup-title { font-weight: 700; margin-bottom: 6px; }
   </style>
 </head>
-
 <body>
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- JS (без min, чтобы исключить ситуацию, когда min-скрипт не грузится) -->
+  <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
-    // 1) ВСТАВЬ СЮДА СОДЕРЖИМОЕ places.json ЦЕЛИКОМ (должен быть массив: [])
+    // Данные
     const PLACES = [
-
       {
         "title":"Мясницкий бар",
         "address":"Мясницкий пр., 2/1",
         "lat":55.768390,
         "lng":37.646372,
         "tag":"#Красные_ворота",
-        "link":"https://t.me/glfmgfldofkom/2"
+        "link":"https://t.me/glfmgfldofkom/2",
+        "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       },
-
-    {
+      {
         "title":"Mbar",
-        .
         "address":"Лесная ул., 20, стр. 1",
         "lat":55.780522,
         "lng":37.592132,
         "tag":"#Белорусская",
-        "link":"https://t.me/glfmgfldofkom/5"
+        "link":"https://t.me/glfmgfldofkom/5",
+        "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       }
-      
     ];
 
-    // 2) Инициализация карты
-    const MAP_CENTER = [55.768390, 37.646372];
+    const MAP_CENTER = [55.768390, 37.646372]; // [lat, lng]
     const MAP_ZOOM = 15;
 
-    const map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // 3) Безопасное экранирование для HTML
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, s => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -68,25 +73,71 @@
       return String(str).replace(/"/g, '&quot;');
     }
 
-    function loadPlaces() {
-      if (!Array.isArray(PLACES) || PLACES.length === 0) return;
+    function createMarkerElement(imageUrl) {
+      const el = document.createElement('div');
+      el.className = 'place-icon';
 
-      for (const p of PLACES) {
-        const marker = L.marker([p.lat, p.lng]).addTo(map);
+      const img = document.createElement('img');
+      img.alt = '';
+      img.onerror = () => { img.style.display = 'none'; };
+      if (imageUrl) img.src = imageUrl;
 
-        const popupHtml = `
-          <div class="popup-title">${escapeHtml(p.title || '')}</div>
-          <div>${escapeHtml(p.address || '')}</div>
-          ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-          ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>` : ''}
-        `;
-
-        marker.bindPopup(popupHtml);
-      }
+      el.appendChild(img);
+      return el;
     }
 
-    // 4) Вызов
-    loadPlaces();
+    // Диагностика: если maplibregl не загрузился — станет понятно сразу
+    if (typeof maplibregl === 'undefined') {
+      console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
+      throw new Error('maplibregl missing');
+    }
+
+    // Карта
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap contributors'
+          }
+        },
+        layers: [
+          { id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 19 }
+        ]
+      },
+      center: [MAP_CENTER[1], MAP_CENTER[0]], // [lng, lat]
+      zoom: MAP_ZOOM
+    });
+
+    map.on('load', () => console.log('Map loaded OK'));
+    map.on('error', (e) => console.error('Map error:', e?.error || e));
+
+    // Попапы и маркеры
+    for (const p of PLACES) {
+      const el = createMarkerElement(p.image);
+
+      const popupHtml = `
+        <div class="popup-title">${escapeHtml(p.title || '')}</div>
+        <div>${escapeHtml(p.address || '')}</div>
+        ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
+        ${
+          p.link
+            ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>`
+            : ''
+        }
+      `;
+
+      const popup = new maplibregl.Popup({ offset: [0, -40], closeButton: false }).setHTML(popupHtml);
+
+      new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([p.lng, p.lat])
+        .setPopup(popup)
+        .addTo(map);
+    }
   </script>
 </body>
 </html>
