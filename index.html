@@ -32,7 +32,7 @@
       "lat":55.768390,
       "lng":37.646372,
       "tag":"#Красные_ворота",
-      "link":"https://t.me/myasnitskiybar"
+      "link":"https://t.me/glfmgfldofkom/2"
     }
     */
   ];
@@ -47,7 +47,7 @@
         <div class="popup-title">${escapeHtml(p.title || '')}</div>
         <div>${escapeHtml(p.address || '')}</div>
         ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>` : ''}
+        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>` : ''}
       `;
       marker.bindPopup(popupHtml);
     }
