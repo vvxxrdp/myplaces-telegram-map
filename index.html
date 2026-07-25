@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
+  <!-- CSS -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css" />
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; position: relative; }
 
+    /* Оверлей поверх карты */
     #overlay {
       position: fixed;
       inset: 0;
@@ -46,13 +48,16 @@
 <body>
   <div id="map"></div>
 
+  <!-- Оверлей -->
   <div id="overlay">
     <div id="overlay-inner">Открываю пост...</div>
   </div>
 
+  <!-- JS -->
   <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
+    // Данные
     const PLACES = [
       {
         "title":"Мясницкий бар",
@@ -74,11 +79,8 @@
       }
     ];
 
-    const MAP_CENTER = [55.768390, 37.646372];
+    const MAP_CENTER = [55.768390, 37.646372]; // [lat, lng]
     const MAP_ZOOM = 15;
-
-    // Сначала открываем бота, потом нужный пост
-    const BOT_INTERSTITIAL = "https://t.me/wjrbot_bot";
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, s => ({
@@ -110,40 +112,24 @@
       if (mapEl) mapEl.style.display = 'none';
     }
 
-    function openUrl(url) {
-      const tg = window.Telegram?.WebApp;
-
-      // Telegram WebApp (если доступно)
-      if (tg && typeof tg.openLink === 'function') {
-        tg.openLink(url);
+    function openPostLink(url) {
+      // Главное — открыть через Telegram WebApp, если доступно.
+      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+        window.Telegram.WebApp.openLink(url);
         return;
       }
 
-      // fallback
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Фоллбек
+      window.open(url, '_blank', 'noopener');
     }
 
-    function openPostWithBotFirst(postUrl) {
-      const delayMs = 120;
-
-      if (!postUrl) {
-        // если по какой-то причине postUrl пустой — просто откроем бот
-        openUrl(BOT_INTERSTITIAL);
-        return;
-      }
-
-      // 1) бот
-      openUrl(BOT_INTERSTITIAL);
-
-      // 2) пост
-      setTimeout(() => openUrl(postUrl), delayMs);
-    }
-
+    // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
-      console.error('maplibregl is not defined.');
+      console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
       throw new Error('maplibregl missing');
     }
 
+    // Карта
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -160,15 +146,16 @@
           { id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 19 }
         ]
       },
-      center: [MAP_CENTER[1], MAP_CENTER[0]],
+      center: [MAP_CENTER[1], MAP_CENTER[0]], // [lng, lat]
       zoom: MAP_ZOOM
     });
 
     map.on('load', () => console.log('Map loaded OK'));
     map.on('error', (e) => console.error('Map error:', e?.error || e));
 
+    // Одна делегированная обработка на клик по ссылке “Открыть пост”
     document.addEventListener('click', (e) => {
-      const a = e.target?.closest?.('.js-open-post');
+      const a = e.target && e.target.closest ? e.target.closest('.js-open-post') : null;
       if (!a) return;
 
       const url = a.getAttribute('data-link');
@@ -176,10 +163,10 @@
 
       e.preventDefault();
       showOverlayAndHideMap();
-
-      openPostWithBotFirst(url);
+      openPostLink(url);
     });
 
+    // Попапы и маркеры
     for (const p of PLACES) {
       const el = createMarkerElement(p.image);
 
