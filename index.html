@@ -113,24 +113,16 @@
     }
 
     function openPostLink(url) {
-    const tg = window.Telegram?.WebApp;
-
-    // Закрываем miniapp
-    tg?.close?.();
-
-    // Открываем ссылку после закрытия (или сразу, если close асинхронный)
-    if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
-        tg.openTelegramLink(url);
-        return;
-    }
-    if (tg && typeof tg.openLink === 'function') {
-        tg.openLink(url);
-        return;
+      const tg = window.Telegram?.WebApp;
+    
+      // 1) Закрываем mini app
+      tg?.close?.();
+    
+      // 2) Открываем ссылку как обычную навигацию Telegram
+      // (это НЕ openLink, а прямой переход)
+      window.location.href = url;
     }
 
-    // fallback
-    window.open(url, '_blank', 'noopener');
-    }
 
 
     // Диагностика: если maplibregl не загрузился — станет понятно сразу
