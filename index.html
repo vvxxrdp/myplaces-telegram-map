@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -19,41 +18,64 @@
 <body>
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-  const PLACES = [
-    /* ВСТАВЬ СЮДА СОДЕРЖИМОЕ places.json ЦЕЛИКОМ */
-    /* пример:
-    {
-      "title":"Мясницкий бар",
-      "address":"Мясницкий пр., 2/1",
-      "lat":55.768390,
-      "lng":37.646372,
-      "tag":"#Красные_ворота",
-      "link":"https://t.me/myasnitskiybar"
+    // 1) ВСТАВЬ СЮДА СОДЕРЖИМОЕ places.json ЦЕЛИКОМ (должен быть массив: [])
+    const PLACES = [
+      /* например:
+      {
+        "title":"Мясницкий бар",
+        "address":"Мясницкий пр., 2/1",
+        "lat":55.768390,
+        "lng":37.646372,
+        "tag":"#Красные_ворота",
+        "link":"https://t.me/myasnitskiybar"
+      }
+      */
+    ];
+
+    // 2) Инициализация карты
+    const MAP_CENTER = [55.768390, 37.646372];
+    const MAP_ZOOM = 15;
+
+    const map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3) Безопасное экранирование для HTML
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[s]));
     }
-    */
-  ];
 
-  async function loadPlaces() {
-    const places = PLACES;
-
-    for (const p of places) {
-      const marker = L.marker([p.lat, p.lng]).addTo(map);
-
-      const popupHtml = `
-        <div class="popup-title">${escapeHtml(p.title || '')}</div>
-        <div>${escapeHtml(p.address || '')}</div>
-        ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>` : ''}
-      `;
-      marker.bindPopup(popupHtml);
+    function escapeAttr(str) {
+      return String(str).replace(/"/g, '&quot;');
     }
-  }
-</script>
 
+    function loadPlaces() {
+      if (!Array.isArray(PLACES) || PLACES.length === 0) return;
 
+      for (const p of PLACES) {
+        const marker = L.marker([p.lat, p.lng]).addTo(map);
+
+        const popupHtml = `
+          <div class="popup-title">${escapeHtml(p.title || '')}</div>
+          <div>${escapeHtml(p.address || '')}</div>
+          ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
+          ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>` : ''}
+        `;
+
+        marker.bindPopup(popupHtml);
+      }
+    }
+
+    // 4) Вызов
+    loadPlaces();
+  </script>
 </body>
 </html>
