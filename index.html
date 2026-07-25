@@ -6,59 +6,47 @@
   <title>Карта мест</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; }
     .popup-title { font-weight: 700; margin-bottom: 6px; }
     .popup-link { display: inline-block; margin-top: 6px; color: #2ea8ff; text-decoration: none; }
-    #status {
-      position: absolute;
-      z-index: 9999;
-      left: 12px;
-      top: 12px;
-      max-width: calc(100% - 24px);
-      padding: 10px 12px;
-      background: rgba(0,0,0,0.55);
-      color: #fff;
-      border-radius: 10px;
-      font: 14px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      display: none;
-      pointer-events: none;
-    }
   </style>
-
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
   <div id="map"></div>
-  <div id="status"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // Заполни массив реальными данными из places.json
+    // 1) ВСТАВЬ СЮДА СОДЕРЖИМОЕ places.json ЦЕЛИКОМ (должен быть массив: [])
     const PLACES = [
-      // пример:
-      // {
-      //   "title": "Мясницкий бар",
-      //   "address": "Мясницкий пр., 2/1",
-      //   "lat": 55.768390,
-      //   "lng": 37.646372,
-      //   "tag": "#Красные_ворота",
-      //   "link": "https://t.me/myasnitskiybar"
-      // }
+
+      {
+        "title":"Мясницкий бар",
+        "address":"Мясницкий пр., 2/1",
+        "lat":55.768390,
+        "lng":37.646372,
+        "tag":"#Красные_ворота",
+        "link":"https://t.me/glfmgfldofkom/2"
+      }
+      
     ];
 
+    // 2) Инициализация карты
     const MAP_CENTER = [55.768390, 37.646372];
     const MAP_ZOOM = 15;
 
-    const statusEl = document.getElementById('status');
-    function showStatus(text) {
-      statusEl.textContent = text;
-      statusEl.style.display = 'block';
-    }
+    const map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
 
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3) Безопасное экранирование для HTML
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, s => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -69,87 +57,24 @@
       return String(str).replace(/"/g, '&quot;');
     }
 
-    // Telegram WebApp init (если доступно)
-    try {
-      if (window.Telegram && window.Telegram.WebApp) {
-        Telegram.WebApp.ready();
-        // Telegram.WebApp.expand(); // при необходимости раскомментируй
-      }
-    } catch (e) {}
-
-    // Карта
-    const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    function getLatLng(p) {
-      // Поддержим разные варианты полей (на случай, если в places.json не lat/lng)
-      const lat = p?.lat ?? p?.latitude ?? p?.Lat ?? p?.LAT;
-      const lng = p?.lng ?? p?.longitude ?? p?.Lng ?? p?.LNG;
-
-      const nLat = Number(lat);
-      const nLng = Number(lng);
-
-      if (!Number.isFinite(nLat) || !Number.isFinite(nLng)) return null;
-      return [nLat, nLng];
-    }
-
-    function fitToMarkers(markers) {
-      if (!markers || markers.length === 0) return;
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.25));
-    }
-
     function loadPlaces() {
-      const markers = [];
+      if (!Array.isArray(PLACES) || PLACES.length === 0) return;
 
-      if (!Array.isArray(PLACES) || PLACES.length === 0) {
-        // Чтобы точка не "пропадала", рисуем тестовую точку (и показываем статус)
-        showStatus('Нет данных PLACES. Вставь содержимое places.json в массив PLACES.');
-        const marker = L.marker(MAP_CENTER).addTo(map);
-        marker.bindPopup('Нет данных PLACES (проверь places.json).');
-        return;
-      }
-
-      // Если есть данные — попробуем добавить все валидные точки
       for (const p of PLACES) {
-        const ll = getLatLng(p);
-        if (!ll) continue;
-
-        const [lat, lng] = ll;
-
-        const marker = L.marker([lat, lng]).addTo(map);
+        const marker = L.marker([p.lat, p.lng]).addTo(map);
 
         const popupHtml = `
           <div class="popup-title">${escapeHtml(p.title || '')}</div>
-          <div>${escapeHtml(p.address || p.addr || '')}</div>
+          <div>${escapeHtml(p.address || '')}</div>
           ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-          ${
-            p.link
-              ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>`
-              : ''
-          }
+          ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>` : ''}
         `;
 
         marker.bindPopup(popupHtml);
-        markers.push(marker);
       }
-
-      if (markers.length === 0) {
-        showStatus('PLACES заполнен, но ни одна точка невалидна (проверь lat/lng поля).');
-        // Можно оставить тестовую метку
-        const marker = L.marker(MAP_CENTER).addTo(map);
-        marker.bindPopup('Данные есть, но координаты не распознаны. Проверь названия полей lat/lng или latitude/longitude.');
-        return;
-      }
-
-      fitToMarkers(markers);
-      showStatus(`Показано мест: ${markers.length}`);
     }
 
+    // 4) Вызов
     loadPlaces();
   </script>
 </body>
