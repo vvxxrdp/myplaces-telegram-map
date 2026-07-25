@@ -115,13 +115,15 @@
     function openPostLink(url) {
       const tg = window.Telegram?.WebApp;
     
-      // 1) Закрываем mini app
+      // Закрываем
       tg?.close?.();
     
-      // 2) Открываем ссылку как обычную навигацию Telegram
-      // (это НЕ openLink, а прямой переход)
-      window.location.href = url;
+      // Даем момент Telegram закрыть WebView
+      setTimeout(() => {
+        window.open(url, '_blank', 'noopener');
+      }, 50);
     }
+
 
 
 
