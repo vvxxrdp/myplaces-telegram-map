@@ -65,7 +65,7 @@
         "lat":55.768390,
         "lng":37.646372,
         "tag":"#Красные_ворота",
-        "link":"https://t.me/glfmgfldofkom/2",
+        "link":"https://t.me/wjrbot_bot",
         "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       },
       {
@@ -113,25 +113,15 @@
     }
 
     function openPostLink(url) {
-    const tg = window.Telegram?.WebApp;
-
-    // Закрываем miniapp
-    tg?.close?.();
-
-    // Открываем ссылку после закрытия (или сразу, если close асинхронный)
-    if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
-        tg.openTelegramLink(url);
+      // Главное — открыть через Telegram WebApp, если доступно.
+      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+        window.Telegram.WebApp.openLink(url);
         return;
-    }
-    if (tg && typeof tg.openLink === 'function') {
-        tg.openLink(url);
-        return;
-    }
+      }
 
-    // fallback
-    window.open(url, '_blank', 'noopener');
+      // Фоллбек
+      window.open(url, '_blank', 'noopener');
     }
-
 
     // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
