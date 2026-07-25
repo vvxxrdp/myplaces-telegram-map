@@ -10,7 +10,21 @@
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
-    #map { height: 100%; width: 100%; }
+    #map { height: 100%; width: 100%; position: relative; }
+
+    /* Оверлей поверх карты */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: #0b0f19;
+      z-index: 9999;
+      display: none;
+    }
+    #overlay-inner{
+      padding: 18px;
+      color: #fff;
+      font-family: sans-serif;
+    }
 
     .place-icon {
       width: 44px;
@@ -34,7 +48,12 @@
 <body>
   <div id="map"></div>
 
-  <!-- JS (без min, чтобы исключить ситуацию, когда min-скрипт не грузится) -->
+  <!-- Оверлей -->
+  <div id="overlay">
+    <div id="overlay-inner">Открываю пост...</div>
+  </div>
+
+  <!-- JS -->
   <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
@@ -86,6 +105,24 @@
       return el;
     }
 
+    function showOverlayAndHideMap() {
+      const overlay = document.getElementById('overlay');
+      const mapEl = document.getElementById('map');
+      if (overlay) overlay.style.display = 'block';
+      if (mapEl) mapEl.style.display = 'none';
+    }
+
+    function openPostLink(url) {
+      // Главное — открыть через Telegram WebApp, если доступно.
+      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+        window.Telegram.WebApp.openLink(url);
+        return;
+      }
+
+      // Фоллбек
+      window.open(url, '_blank', 'noopener');
+    }
+
     // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
       console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
@@ -116,6 +153,19 @@
     map.on('load', () => console.log('Map loaded OK'));
     map.on('error', (e) => console.error('Map error:', e?.error || e));
 
+    // Одна делегированная обработка на клик по ссылке “Открыть пост”
+    document.addEventListener('click', (e) => {
+      const a = e.target && e.target.closest ? e.target.closest('.js-open-post') : null;
+      if (!a) return;
+
+      const url = a.getAttribute('data-link');
+      if (!url) return;
+
+      e.preventDefault();
+      showOverlayAndHideMap();
+      openPostLink(url);
+    });
+
     // Попапы и маркеры
     for (const p of PLACES) {
       const el = createMarkerElement(p.image);
@@ -126,7 +176,7 @@
         ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
         ${
           p.link
-            ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>`
+            ? `<a class="popup-link js-open-post" href="${escapeAttr(p.link)}" data-link="${escapeAttr(p.link)}">Открыть пост</a>`
             : ''
         }
       `;
