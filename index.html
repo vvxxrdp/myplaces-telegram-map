@@ -35,7 +35,7 @@
     }).addTo(map);
 
     async function loadPlaces() {
-      const res = await fetch('./places.json', { cache: 'no-store' });
+      const res = await fetch('places.json', { cache: 'no-store' });
       const places = await res.json();
 
       for (const p of places) {
