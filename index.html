@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
-  <!-- CSS -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css" />
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; position: relative; }
 
-    /* Оверлей поверх карты */
     #overlay {
       position: fixed;
       inset: 0;
@@ -48,16 +46,13 @@
 <body>
   <div id="map"></div>
 
-  <!-- Оверлей -->
   <div id="overlay">
     <div id="overlay-inner">Открываю пост...</div>
   </div>
 
-  <!-- JS -->
   <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
-    // Данные
     const PLACES = [
       {
         "title":"Мясницкий бар",
@@ -65,7 +60,7 @@
         "lat":55.768390,
         "lng":37.646372,
         "tag":"#Красные_ворота",
-        "link":"https://t.me/wjrbot_bot",
+        "link":"https://t.me/glfmgfldofkom/2",
         "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       },
       {
@@ -79,8 +74,12 @@
       }
     ];
 
-    const MAP_CENTER = [55.768390, 37.646372]; // [lat, lng]
+    const MAP_CENTER = [55.768390, 37.646372];
     const MAP_ZOOM = 15;
+
+    // Твоя цель: открыть t.me/glfmgfldofkom/...,
+    // но сначала открыть страницу бота.
+    const BOT_INTERSTITIAL = "https://t.me/wjrbot_bot";
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, s => ({
@@ -112,24 +111,41 @@
       if (mapEl) mapEl.style.display = 'none';
     }
 
-    function openPostLink(url) {
-      // Главное — открыть через Telegram WebApp, если доступно.
-      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
-        window.Telegram.WebApp.openLink(url);
+    function openPostWithBotFirst(postUrl) {
+      const tg = window.Telegram?.WebApp;
+
+      // Небольшая пауза, чтобы Telegram успел инициировать первый переход
+      // и не "похоронил" открытие второго.
+      const delayMs = 120;
+
+      const openViaTelegram = (url) => {
+        if (tg && typeof tg.openLink === 'function') {
+          tg.openLink(url);
+          return true;
+        }
+        return false;
+      };
+
+      // 1) Сначала открываем страницу бота
+      const openedBot = openViaTelegram(BOT_INTERSTITIAL);
+      if (openedBot) {
+        setTimeout(() => {
+          // 2) Потом открываем нужный пост
+          if (!openViaTelegram(postUrl)) window.open(postUrl, '_blank', 'noopener');
+        }, delayMs);
         return;
       }
 
-      // Фоллбек
-      window.open(url, '_blank', 'noopener');
+      // fallback, если Telegram API недоступно:
+      window.open(BOT_INTERSTITIAL, '_blank', 'noopener');
+      setTimeout(() => window.open(postUrl, '_blank', 'noopener'), delayMs);
     }
 
-    // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
-      console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
+      console.error('maplibregl is not defined.');
       throw new Error('maplibregl missing');
     }
 
-    // Карта
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -146,16 +162,15 @@
           { id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 19 }
         ]
       },
-      center: [MAP_CENTER[1], MAP_CENTER[0]], // [lng, lat]
+      center: [MAP_CENTER[1], MAP_CENTER[0]],
       zoom: MAP_ZOOM
     });
 
     map.on('load', () => console.log('Map loaded OK'));
     map.on('error', (e) => console.error('Map error:', e?.error || e));
 
-    // Одна делегированная обработка на клик по ссылке “Открыть пост”
     document.addEventListener('click', (e) => {
-      const a = e.target && e.target.closest ? e.target.closest('.js-open-post') : null;
+      const a = e.target?.closest?.('.js-open-post');
       if (!a) return;
 
       const url = a.getAttribute('data-link');
@@ -163,10 +178,10 @@
 
       e.preventDefault();
       showOverlayAndHideMap();
-      openPostLink(url);
+
+      openPostWithBotFirst(url);
     });
 
-    // Попапы и маркеры
     for (const p of PLACES) {
       const el = createMarkerElement(p.image);
 
