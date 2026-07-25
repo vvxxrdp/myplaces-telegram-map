@@ -113,15 +113,25 @@
     }
 
     function openPostLink(url) {
-      // Главное — открыть через Telegram WebApp, если доступно.
-      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
-        window.Telegram.WebApp.openLink(url);
-        return;
-      }
+    const tg = window.Telegram?.WebApp;
 
-      // Фоллбек
-      window.open(url, '_blank', 'noopener');
+    // Закрываем miniapp
+    tg?.close?.();
+
+    // Открываем ссылку после закрытия (или сразу, если close асинхронный)
+    if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
+        tg.openTelegramLink(url);
+        return;
     }
+    if (tg && typeof tg.openLink === 'function') {
+        tg.openLink(url);
+        return;
+    }
+
+    // fallback
+    window.open(url, '_blank', 'noopener');
+    }
+
 
     // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
