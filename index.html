@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
+  <!-- CSS -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css" />
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; position: relative; }
 
+    /* Оверлей поверх карты */
     #overlay {
       position: fixed;
       inset: 0;
@@ -46,13 +48,16 @@
 <body>
   <div id="map"></div>
 
+  <!-- Оверлей -->
   <div id="overlay">
     <div id="overlay-inner">Открываю пост...</div>
   </div>
 
+  <!-- JS -->
   <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
+    // Данные
     const PLACES = [
       {
         "title":"Мясницкий бар",
@@ -60,7 +65,7 @@
         "lat":55.768390,
         "lng":37.646372,
         "tag":"#Красные_ворота",
-        "link":"https://t.me/wjrbot_bot",
+        "link":"https://t.me/glfmgfldofkom/2",
         "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       },
       {
@@ -69,7 +74,7 @@
         "lat":55.780522,
         "lng":37.592132,
         "tag":"#Белорусская",
-        "link":"https://t.me/wjrbot_bot",
+        "link":"https://t.me/glfmgfldofkom/5",
         "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
       }
     ];
@@ -108,49 +113,33 @@
     }
 
     function openPostLink(url) {
-      const tg = window.Telegram?.WebApp;
+    const tg = window.Telegram?.WebApp;
 
-      const webAppEntry = 'https://t.me/wjrbot_bot';
+    // Закрываем miniapp
+    tg?.close?.();
 
-      // Пытаемся сделать "двойной" переход:
-      // 1) открыть web.telegram.org/k/#@wjrbot_bot
-      // 2) сразу/чуть позже открыть нужную t.me-ссылку
-      // (в Telegram WebView цепочки иногда блокируются, поэтому используем небольшой setTimeout)
-      const openTwoStep = () => {
-        try {
-          if (tg?.openLink) {
-            tg.openLink(webAppEntry);
-            setTimeout(() => tg.openLink?.(url), 150);
-            return;
-          }
-        } catch (e) {}
-
-        // fallback
-        window.open(webAppEntry, '_blank', 'noopener');
-        setTimeout(() => window.open(url, '_blank', 'noopener'), 150);
-      };
-
-      if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
-        // В некоторых окружениях openTelegramLink не любит смену страницы сразу.
-        // Поэтому используем openLink для web.telegram.org, а потом openTelegramLink для t.me.
-        if (typeof tg.openLink === 'function') {
-          tg.openLink(webAppEntry);
-          setTimeout(() => tg.openTelegramLink(url), 150);
-          return;
-        }
-        // если tg.openLink нет — всё равно пробуем двухшагово через openTwoStep
-        openTwoStep();
+    // Открываем ссылку после закрытия (или сразу, если close асинхронный)
+    if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
+        tg.openTelegramLink(url);
         return;
-      }
-
-      openTwoStep();
+    }
+    if (tg && typeof tg.openLink === 'function') {
+        tg.openLink(url);
+        return;
     }
 
+    // fallback
+    window.open(url, '_blank', 'noopener');
+    }
+
+
+    // Диагностика: если maplibregl не загрузился — станет понятно сразу
     if (typeof maplibregl === 'undefined') {
       console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
       throw new Error('maplibregl missing');
     }
 
+    // Карта
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -174,18 +163,20 @@
     map.on('load', () => console.log('Map loaded OK'));
     map.on('error', (e) => console.error('Map error:', e?.error || e));
 
+    // Одна делегированная обработка на клик по ссылке “Открыть пост”
     document.addEventListener('click', (e) => {
-      const a = e.target?.closest?.('.js-open-post');
+      const a = e.target && e.target.closest ? e.target.closest('.js-open-post') : null;
       if (!a) return;
 
       const url = a.getAttribute('data-link');
       if (!url) return;
 
       e.preventDefault();
-      openPostLink(url);
       showOverlayAndHideMap();
+      openPostLink(url);
     });
 
+    // Попапы и маркеры
     for (const p of PLACES) {
       const el = createMarkerElement(p.image);
 
