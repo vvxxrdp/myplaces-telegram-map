@@ -47,12 +47,13 @@
         <div class="popup-title">${escapeHtml(p.title || '')}</div>
         <div>${escapeHtml(p.address || '')}</div>
         ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>` : ''}
+        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>` : ''}
       `;
       marker.bindPopup(popupHtml);
     }
   }
 </script>
+
 
 </body>
 </html>
