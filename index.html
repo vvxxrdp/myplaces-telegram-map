@@ -5,115 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
     #map { height: 100%; width: 100%; }
     .popup-title { font-weight: 700; margin-bottom: 6px; }
     .popup-link { display: inline-block; margin-top: 6px; color: #2ea8ff; text-decoration: none; }
   </style>
-
-  <!-- Telegram WebApp SDK (на случай запуска как Web App) -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
   <div id="map"></div>
 
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    // --- ДАННЫЕ (вставь сюда содержимое places.json как массив объектов) ---
-    // Ожидается: PLACES = [ {...}, {...} ]
-    const PLACES = [
-      // Пример:
-      /*
-      {
-        "title": "Мясницкий бар",
-        "address": "Мясницкий пр., 2/1",
-        "lat": 55.768390,
-        "lng": 37.646372,
-        "tag": "#Красные_ворота",
-        "link": "https://t.me/myasnitskiybar"
-      }
-      */
-    ];
-
-    // --- НАСТРОЙКИ КАРТЫ ---
-    const MAP_CENTER = [55.768390, 37.646372];
-    const MAP_ZOOM = 15;
-
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, s => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[s]));
+  const PLACES = [
+    /* ВСТАВЬ СЮДА СОДЕРЖИМОЕ places.json ЦЕЛИКОМ */
+    /* пример:
+    {
+      "title":"Мясницкий бар",
+      "address":"Мясницкий пр., 2/1",
+      "lat":55.768390,
+      "lng":37.646372,
+      "tag":"#Красные_ворота",
+      "link":"https://t.me/myasnitskiybar"
     }
+    */
+  ];
 
-    function escapeAttr(str) {
-      return String(str).replace(/"/g, '&quot;');
+  async function loadPlaces() {
+    const places = PLACES;
+
+    for (const p of places) {
+      const marker = L.marker([p.lat, p.lng]).addTo(map);
+
+      const popupHtml = `
+        <div class="popup-title">${escapeHtml(p.title || '')}</div>
+        <div>${escapeHtml(p.address || '')}</div>
+        ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
+        ${p.link ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>` : ''}
+      `;
+      marker.bindPopup(popupHtml);
     }
+  }
+</script>
 
-    // --- ИНИЦИАЛИЗАЦИЯ Telegram WebApp (если доступно) ---
-    try {
-      if (window.Telegram && window.Telegram.WebApp) {
-        Telegram.WebApp.ready();
-        // Можно включать расширенный вид, если Telegram поддерживает:
-        // Telegram.WebApp.expand();
-      }
-    } catch (e) {}
-
-    // --- ИНИЦИАЛИЗАЦИЯ КАРТЫ ---
-    const map = L.map('map', {
-      zoomControl: true
-    }).setView(MAP_CENTER, MAP_ZOOM);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // --- ПОДСТРАИВАНИЕ ПОЛЯ ПОД МАРКЕРЫ (если есть точки) ---
-    function fitToMarkers(markers) {
-      if (!markers || markers.length === 0) return;
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.25));
-    }
-
-    function loadPlaces() {
-      // Чтобы страница "не выглядела сломанной", показываем хотя бы сообщения в консоль
-      if (!Array.isArray(PLACES) || PLACES.length === 0) {
-        console.warn('PLACES пустой или не массив. Маркеры не добавлены.');
-        return;
-      }
-
-      const markers = [];
-
-      for (const p of PLACES) {
-        const lat = Number(p.lat);
-        const lng = Number(p.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-
-        const marker = L.marker([lat, lng]).addTo(map);
-
-        const popupHtml = `
-          <div class="popup-title">${escapeHtml(p.title || '')}</div>
-          <div>${escapeHtml(p.address || '')}</div>
-          ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
-          ${
-            p.link
-              ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть место</a>`
-              : ``
-          }
-        `;
-
-        marker.bindPopup(popupHtml);
-        markers.push(marker);
-      }
-
-      fitToMarkers(markers);
-    }
-
-    loadPlaces();
-  </script>
 </body>
 </html>
