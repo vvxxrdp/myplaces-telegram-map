@@ -113,16 +113,20 @@
     }
 
     function openPostLink(url) {
-      const tg = window.Telegram?.WebApp;
-    
-      // Закрываем
-      tg?.close?.();
-    
-      // Даем момент Telegram закрыть WebView
-      setTimeout(() => {
-        window.open(url, '_blank', 'noopener');
-      }, 50);
+    const tg = window.Telegram?.WebApp;
+  
+    if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
+      tg.openTelegramLink(url);
+      return;
     }
+    if (tg && typeof tg.openLink === 'function') {
+      tg.openLink(url);
+      return;
+    }
+  
+    window.open(url, '_blank', 'noopener');
+  }
+
 
 
 
