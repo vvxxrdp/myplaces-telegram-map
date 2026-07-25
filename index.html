@@ -110,18 +110,40 @@
     function openPostLink(url) {
       const tg = window.Telegram?.WebApp;
 
-      // ВАЖНО: не закрываем miniapp — это часто ломает переход при клике из бота
+      const webAppEntry = 'https://web.telegram.org/k/#@wjrbot_bot';
+
+      // Пытаемся сделать "двойной" переход:
+      // 1) открыть web.telegram.org/k/#@wjrbot_bot
+      // 2) сразу/чуть позже открыть нужную t.me-ссылку
+      // (в Telegram WebView цепочки иногда блокируются, поэтому используем небольшой setTimeout)
+      const openTwoStep = () => {
+        try {
+          if (tg?.openLink) {
+            tg.openLink(webAppEntry);
+            setTimeout(() => tg.openLink?.(url), 150);
+            return;
+          }
+        } catch (e) {}
+
+        // fallback
+        window.open(webAppEntry, '_blank', 'noopener');
+        setTimeout(() => window.open(url, '_blank', 'noopener'), 150);
+      };
+
       if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('t.me/')) {
-        tg.openTelegramLink(url);
+        // В некоторых окружениях openTelegramLink не любит смену страницы сразу.
+        // Поэтому используем openLink для web.telegram.org, а потом openTelegramLink для t.me.
+        if (typeof tg.openLink === 'function') {
+          tg.openLink(webAppEntry);
+          setTimeout(() => tg.openTelegramLink(url), 150);
+          return;
+        }
+        // если tg.openLink нет — всё равно пробуем двухшагово через openTwoStep
+        openTwoStep();
         return;
       }
 
-      if (tg && typeof tg.openLink === 'function') {
-        tg.openLink(url);
-        return;
-      }
-
-      window.open(url, '_blank', 'noopener');
+      openTwoStep();
     }
 
     if (typeof maplibregl === 'undefined') {
@@ -160,8 +182,6 @@
       if (!url) return;
 
       e.preventDefault();
-
-      // Открываем ссылку первым, потом показываем оверлей
       openPostLink(url);
       showOverlayAndHideMap();
     });
