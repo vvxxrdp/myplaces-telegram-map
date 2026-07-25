@@ -77,8 +77,7 @@
     const MAP_CENTER = [55.768390, 37.646372];
     const MAP_ZOOM = 15;
 
-    // Твоя цель: открыть t.me/glfmgfldofkom/...,
-    // но сначала открыть страницу бота.
+    // Сначала открываем бота, потом нужный пост
     const BOT_INTERSTITIAL = "https://t.me/wjrbot_bot";
 
     function escapeHtml(str) {
@@ -111,34 +110,33 @@
       if (mapEl) mapEl.style.display = 'none';
     }
 
-    function openPostWithBotFirst(postUrl) {
+    function openUrl(url) {
       const tg = window.Telegram?.WebApp;
 
-      // Небольшая пауза, чтобы Telegram успел инициировать первый переход
-      // и не "похоронил" открытие второго.
-      const delayMs = 120;
-
-      const openViaTelegram = (url) => {
-        if (tg && typeof tg.openLink === 'function') {
-          tg.openLink(url);
-          return true;
-        }
-        return false;
-      };
-
-      // 1) Сначала открываем страницу бота
-      const openedBot = openViaTelegram(BOT_INTERSTITIAL);
-      if (openedBot) {
-        setTimeout(() => {
-          // 2) Потом открываем нужный пост
-          if (!openViaTelegram(postUrl)) window.open(postUrl, '_blank', 'noopener');
-        }, delayMs);
+      // Telegram WebApp (если доступно)
+      if (tg && typeof tg.openLink === 'function') {
+        tg.openLink(url);
         return;
       }
 
-      // fallback, если Telegram API недоступно:
-      window.open(BOT_INTERSTITIAL, '_blank', 'noopener');
-      setTimeout(() => window.open(postUrl, '_blank', 'noopener'), delayMs);
+      // fallback
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function openPostWithBotFirst(postUrl) {
+      const delayMs = 120;
+
+      if (!postUrl) {
+        // если по какой-то причине postUrl пустой — просто откроем бот
+        openUrl(BOT_INTERSTITIAL);
+        return;
+      }
+
+      // 1) бот
+      openUrl(BOT_INTERSTITIAL);
+
+      // 2) пост
+      setTimeout(() => openUrl(postUrl), delayMs);
     }
 
     if (typeof maplibregl === 'undefined') {
