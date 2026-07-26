@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Карта мест</title>
 
-  <!-- CSS -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.css" />
 
   <style>
@@ -40,7 +39,6 @@
       pointer-events: none;
       transition: opacity 200ms ease;
     }
-
     .place-modal.is-open {
       opacity: 1;
       pointer-events: auto;
@@ -57,31 +55,23 @@
 
     /* “обложка”, которая анимируется из маркера */
     .place-hero {
-  position: absolute;
-
-  width: 100%; 
-  height: 100%;
-  transform: translate(50%, 50%) scale(1);
-  transform-origin: center;
-
-  transition: transform 320ms cubic-bezier(.2,.9,.2,1),
-              border-radius 320ms cubic-bezier(.2,.9,.2,1);
-}
-
-    .place-hero img {
+      position: absolute;
+      width: 100%;
       height: 100%;
-      object-fit: cover;
-      display: block;
-      transform: scale(1.0);
-      
+      transform: translate(50%, 50%) scale(1);
+      transform-origin: center;
+      transition: transform 320ms cubic-bezier(.2,.9,.2,1),
+                  border-radius 320ms cubic-bezier(.2,.9,.2,1);
     }
+
+    
 
     .place-hero__top {
       position: absolute;
-
-
       background: linear-gradient(to bottom, rgba(0,0,0,0.62), rgba(0,0,0,0));
       pointer-events: none;
+      left: 0; right: 0; top: 0;
+      padding: 16px;
     }
 
     .place-hero__title {
@@ -126,7 +116,6 @@
       position: absolute;
       top: 14px; right: 14px;
       z-index: 2;
-
       width: 40px; height: 40px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,0.15);
@@ -137,16 +126,80 @@
       display: flex;
       align-items: center;
       justify-content: center;
-
       font-size: 16px;
       line-height: 1;
     }
+    .place-modal__close:active { transform: scale(0.98); }
 
-    .place-modal__close:active {
-      transform: scale(0.98);
+    /* ========= HERO GALLERY ========= */
+    .place-gallery {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .place-gallery__track {
+      height: 100%;
+      display: flex;
+      transition: transform 280ms ease;
+      will-change: transform;
+    }
+    .place-gallery__slide {
+      flex: 0 0 100%;
+      height: 100%;
+      position: relative;
+    }
+    .place-gallery__slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.0);
+    }
+
+    .place-gallery__nav {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .place-gallery__btn {
+      pointer-events: auto;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(10,15,30,0.35);
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .place-gallery__btn:active { transform: translateY(-50%) scale(0.98); }
+    .place-gallery__btn--prev { left: 14px; }
+    .place-gallery__btn--next { right: 14px; }
+
+    .place-gallery__hint {
+      position: absolute;
+      left: 50%;
+      bottom: 70px;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.9;
     }
   </style>
 </head>
+
 <body>
   <div id="map"></div>
 
@@ -156,7 +209,17 @@
       <button class="place-modal__close" id="placeModalClose" type="button" aria-label="Закрыть">✕</button>
 
       <div class="place-hero" id="placeHero" aria-hidden="true">
-        <img id="placeHeroImg" alt="">
+        <div class="place-gallery" aria-label="Галерея изображений">
+          <div class="place-gallery__track" id="placeGalleryTrack"></div>
+
+          <div class="place-gallery__nav">
+            <button class="place-gallery__btn place-gallery__btn--prev" id="galleryPrev" type="button" aria-label="Предыдущее изображение">‹</button>
+            <button class="place-gallery__btn place-gallery__btn--next" id="galleryNext" type="button" aria-label="Следующее изображение">›</button>
+          </div>
+
+          <div class="place-gallery__hint">Свайп / кнопки</div>
+        </div>
+
         <div class="place-hero__top">
           <div class="place-hero__title" id="placeHeroTitle"></div>
         </div>
@@ -170,30 +233,37 @@
     </div>
   </div>
 
-  <!-- JS -->
   <script src="https://unpkg.com/maplibre-gl@5.2.0/dist/maplibre-gl.js"></script>
 
   <script>
-    // Данные
     const PLACES = [
       {
-        "title":"Мясницкий бар",
-        "address":"Мясницкий пр., 2/1",
-        "lat":55.768390,
-        "lng":37.646372,
-        "tag":"#Красные_ворота",
-        "link":"https://t.me/glfmgfldofkom/2",
-        "image":"images/photo_5411372173072472756_y.jpg"
+        title: "Мясницкий бар",
+        address: "Мясницкий пр., 2/1",
+        lat: 55.768390,
+        lng: 37.646372,
+        tag: "#Красные_ворота",
+        link: "https://t.me/glfmgfldofkom/2",
+        images: [
+          "images/photo_5411372173072472756_y.jpg",
+          "images/photo_5393545456043892117_y.jpg",
+          "images/photo_5393545456043892118_y.jpg",
+          "images/photo_5393545456043892119_y.jpg"
+        ]
       },
       {
-        "title":"Mbar",
-        "address":"Лесная ул., 20, стр. 1",
-        "lat":55.780522,
-        "lng":37.592132,
-        "tag":"#Белорусская",
-        "link":"https://t.me/glfmgfldofkom/5",
-        "image":"images/photo_5393545456043892116_y.jpg"
-
+        title: "Mbar",
+        address: "Лесная ул., 20, стр. 1",
+        lat: 55.780522,
+        lng: 37.592132,
+        tag: "#Белорусская",
+        link: "https://t.me/glfmgfldofkom/5",
+        images: [
+          "images/photo_5393545456043892116_y.jpg",
+          "images/photo_5411372173072472757_y.jpg",
+          "images/photo_5411372173072472758_y.jpg",
+          "images/photo_5411372173072472759_y.jpg"
+        ]
       }
     ];
 
@@ -228,17 +298,122 @@
     const placeHero = document.getElementById('placeHero');
     const placeModalClose = document.getElementById('placeModalClose');
 
-    const placeHeroImg = document.getElementById('placeHeroImg');
     const placeHeroTitle = document.getElementById('placeHeroTitle');
     const placeHeroAddress = document.getElementById('placeHeroAddress');
     const placeHeroTag = document.getElementById('placeHeroTag');
     const placeHeroLink = document.getElementById('placeHeroLink');
 
+    const placeGalleryTrack = document.getElementById('placeGalleryTrack');
+    const galleryPrev = document.getElementById('galleryPrev');
+    const galleryNext = document.getElementById('galleryNext');
+
     let isModalOpen = false;
 
+    let galleryImages = [];
+    let galleryIndex = 0;
+
+    function updateGalleryNav() {
+      const total = galleryImages.length;
+      const canPrev = total > 1 && galleryIndex > 0;
+      const canNext = total > 1 && galleryIndex < total - 1;
+
+      galleryPrev.style.opacity = canPrev ? '1' : '0.45';
+      galleryNext.style.opacity = canNext ? '1' : '0.45';
+
+      galleryPrev.disabled = !canPrev;
+      galleryNext.disabled = !canNext;
+
+      galleryPrev.style.pointerEvents = canPrev ? 'auto' : 'none';
+      galleryNext.style.pointerEvents = canNext ? 'auto' : 'none';
+    }
+
+    function setGalleryIndex(i) {
+      const total = galleryImages.length;
+      if (!total) return;
+
+      galleryIndex = Math.max(0, Math.min(i, total - 1));
+      placeGalleryTrack.style.transform = `translateX(${-galleryIndex * 100}%)`;
+      updateGalleryNav();
+    }
+
+    function renderGallery(images = []) {
+      galleryImages = Array.isArray(images) ? images : [];
+      galleryIndex = 0;
+
+      placeGalleryTrack.innerHTML = '';
+
+      // Если картинок нет — рисуем пустой слайд, чтобы фон не “скакал”
+      if (!galleryImages.length) galleryImages = [''];
+
+      for (const url of galleryImages) {
+        const slide = document.createElement('div');
+        slide.className = 'place-gallery__slide';
+
+        const img = document.createElement('img');
+        img.alt = '';
+        img.onerror = () => { img.style.display = 'none'; };
+        if (url) img.src = url;
+
+        slide.appendChild(img);
+        placeGalleryTrack.appendChild(slide);
+      }
+
+      placeGalleryTrack.style.transform = `translateX(0%)`;
+      updateGalleryNav();
+    }
+
+    galleryPrev.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setGalleryIndex(galleryIndex - 1);
+    });
+
+    galleryNext.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setGalleryIndex(galleryIndex + 1);
+    });
+
+    // Простое свайп-управление
+    (function enableSwipe() {
+      let startX = 0;
+      let startY = 0;
+      let isDown = false;
+
+      placeHero.addEventListener('pointerdown', (e) => {
+        if (!isModalOpen) return;
+        isDown = true;
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+
+      placeHero.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        // (опционально) можно делать drag-эффект, но оставим переключение по отпусканию
+      });
+
+      placeHero.addEventListener('pointerup', (e) => {
+        if (!isDown) return;
+        isDown = false;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        // Игнорируем вертикальные жесты
+        if (Math.abs(dy) > Math.abs(dx) * 1.2) return;
+
+        const threshold = 45;
+        if (dx > threshold) setGalleryIndex(galleryIndex - 1);
+        else if (dx < -threshold) setGalleryIndex(galleryIndex + 1);
+      });
+
+      placeHero.addEventListener('pointercancel', () => {
+        isDown = false;
+      });
+    })();
+
     function openPlaceModal(p, fromEl) {
-      placeHeroImg.src = p.image || '';
-      placeHeroImg.alt = p.title || '';
+      renderGallery(p.images);
 
       placeHeroTitle.textContent = p.title || '';
       placeHeroAddress.textContent = p.address || '';
@@ -257,31 +432,24 @@
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
-      // Масштаб до размера маркера относительно окна
-      // place-hero занимает весь viewport, значит scale должен сжать его до rect
       const startScaleX = rect.width / vw;
       const startScaleY = rect.height / vh;
 
       const startX = rect.left;
       const startY = rect.top;
 
-      // Подготовка
       placeModal.classList.add('is-open');
       placeModal.setAttribute('aria-hidden', 'false');
       isModalOpen = true;
 
-      // На старте — убираем переходы, чтобы задать стартовое положение мгновенно
       placeHero.style.transition = 'none';
       placeHero.style.borderRadius = '10px';
 
-      // Стартовая позиция/масштаб “из маркера”
       placeHero.style.transform = `translate(${startX}px, ${startY}px) scale(${startScaleX}, ${startScaleY})`;
 
-      // Форсим layout, чтобы гарантировать применение transform перед анимацией
       placeHero.getBoundingClientRect();
 
       requestAnimationFrame(() => {
-        // Включаем transition и разворачиваем на весь экран
         placeHero.style.transition =
           'transform 320ms cubic-bezier(.2,.9,.2,1), border-radius 320ms cubic-bezier(.2,.9,.2,1)';
         placeHero.style.borderRadius = '0px';
@@ -291,18 +459,26 @@
 
     function closePlaceModal() {
       if (!isModalOpen) return;
-
       placeModal.classList.remove('is-open');
       placeModal.setAttribute('aria-hidden', 'true');
       isModalOpen = false;
     }
 
-    placeModalClose.addEventListener('click', closePlaceModal);
+    placeModalClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closePlaceModal();
+    });
+
     placeModal.addEventListener('click', (e) => {
       if (e.target === placeModal) closePlaceModal();
     });
+
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closePlaceModal();
+      if (!isModalOpen) return;
+      if (e.key === 'ArrowLeft') setGalleryIndex(galleryIndex - 1);
+      if (e.key === 'ArrowRight') setGalleryIndex(galleryIndex + 1);
     });
 
     // ========= Map =========
@@ -336,10 +512,10 @@
 
     // Попапы и маркеры
     for (const p of PLACES) {
-      const el = createMarkerElement(p.image);
+      const markerImg = (p.images && p.images.length) ? p.images[0] : '';
+      const el = createMarkerElement(markerImg);
       el.style.cursor = 'pointer';
 
-      // (Опционально) оставляем popup как подсказку при ховере/тапе
       const popupHtml = `
         <div class="popup-title">${escapeHtml(p.title || '')}</div>
         <div>${escapeHtml(p.address || '')}</div>
@@ -358,7 +534,6 @@
         .setPopup(popup)
         .addTo(map);
 
-      // Главное: клик открывает fullscreen hero с анимацией “с маркера”
       el.addEventListener('click', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
