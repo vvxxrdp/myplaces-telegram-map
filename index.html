@@ -10,21 +10,7 @@
 
   <style>
     html, body { height: 100%; margin: 0; background: #0b0f19; }
-    #map { height: 100%; width: 100%; position: relative; }
-
-    /* Оверлей поверх карты */
-    #overlay {
-      position: fixed;
-      inset: 0;
-      background: #0b0f19;
-      z-index: 9999;
-      display: none;
-    }
-    #overlay-inner{
-      padding: 18px;
-      color: #fff;
-      font-family: sans-serif;
-    }
+    #map { height: 100%; width: 100%; }
 
     .place-icon {
       width: 44px;
@@ -43,14 +29,145 @@
     }
     .popup-link { display: inline-block; margin-top: 6px; color: #2ea8ff; text-decoration: none; }
     .popup-title { font-weight: 700; margin-bottom: 6px; }
+
+    /* ========= FULLSCREEN HERO MODAL ========= */
+    .place-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(6, 10, 20, 0.72);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease;
+    }
+
+    .place-modal.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .place-modal__panel {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+
+    /* “обложка”, которая анимируется из маркера */
+    .place-hero {
+  position: absolute;
+  left: 35%;
+  top: 0%;
+  width: 100%; 
+  height: 100%;
+  transform: translate(50%, 50%) scale(1);
+  transform-origin: center;
+
+  transition: transform 320ms cubic-bezier(.2,.9,.2,1),
+              border-radius 320ms cubic-bezier(.2,.9,.2,1);
+}
+
+    .place-hero img {
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.0);
+    }
+
+    .place-hero__top {
+      position: absolute;
+
+
+      background: linear-gradient(to bottom, rgba(0,0,0,0.62), rgba(0,0,0,0));
+      pointer-events: none;
+    }
+
+    .place-hero__title {
+      font-size: clamp(18px, 4.5vw, 30px);
+      font-weight: 800;
+      line-height: 1.05;
+      color: #fff;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .place-hero__bottom {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0));
+      color: #d7e7ff;
+    }
+
+    .place-hero__address {
+      opacity: 0.95;
+      font-size: 14px;
+      margin-bottom: 10px;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .place-hero__tag {
+      opacity: 0.9;
+      font-size: 13px;
+      margin-bottom: 12px;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .place-hero__link {
+      display: inline-block;
+      color: #2ea8ff;
+      text-decoration: none;
+      font-weight: 700;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .place-modal__close {
+      position: absolute;
+      top: 14px; right: 14px;
+      z-index: 2;
+
+      width: 40px; height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(10,15,30,0.35);
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .place-modal__close:active {
+      transform: scale(0.98);
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Оверлей -->
-  <div id="overlay">
-    <div id="overlay-inner">Открываю пост...</div>
+  <!-- Fullscreen modal -->
+  <div class="place-modal" id="placeModal" aria-hidden="true">
+    <div class="place-modal__panel">
+      <button class="place-modal__close" id="placeModalClose" type="button" aria-label="Закрыть">✕</button>
+
+      <div class="place-hero" id="placeHero" aria-hidden="true">
+        <img id="placeHeroImg" alt="">
+        <div class="place-hero__top">
+          <div class="place-hero__title" id="placeHeroTitle"></div>
+        </div>
+
+        <div class="place-hero__bottom">
+          <div class="place-hero__address" id="placeHeroAddress"></div>
+          <div class="place-hero__tag" id="placeHeroTag"></div>
+          <a class="place-hero__link" id="placeHeroLink" target="_blank" rel="noopener" href="#">Открыть пост</a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- JS -->
@@ -66,7 +183,7 @@
         "lng":37.646372,
         "tag":"#Красные_ворота",
         "link":"https://t.me/glfmgfldofkom/2",
-        "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
+        "image":"images/photo_5393545456043892116_y.jpg"
       },
       {
         "title":"Mbar",
@@ -75,7 +192,7 @@
         "lng":37.592132,
         "tag":"#Белорусская",
         "link":"https://t.me/glfmgfldofkom/5",
-        "image":"https://img.magnific.com/free-photo/autumn-landscape-of-forestry-road_23-2151843655.jpg?size=626&ext=jpg"
+        "image":"images/photo_5411372173072472756_y.jpg"
       }
     ];
 
@@ -105,31 +222,94 @@
       return el;
     }
 
-    function showOverlayAndHideMap() {
-      const overlay = document.getElementById('overlay');
-      const mapEl = document.getElementById('map');
-      if (overlay) overlay.style.display = 'block';
-      if (mapEl) mapEl.style.display = 'none';
-    }
+    // ========= Modal logic =========
+    const placeModal = document.getElementById('placeModal');
+    const placeHero = document.getElementById('placeHero');
+    const placeModalClose = document.getElementById('placeModalClose');
 
-    function openPostLink(url) {
-      // Главное — открыть через Telegram WebApp, если доступно.
-      if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
-        window.Telegram.WebApp.openLink(url);
-        return;
+    const placeHeroImg = document.getElementById('placeHeroImg');
+    const placeHeroTitle = document.getElementById('placeHeroTitle');
+    const placeHeroAddress = document.getElementById('placeHeroAddress');
+    const placeHeroTag = document.getElementById('placeHeroTag');
+    const placeHeroLink = document.getElementById('placeHeroLink');
+
+    let isModalOpen = false;
+
+    function openPlaceModal(p, fromEl) {
+      placeHeroImg.src = p.image || '';
+      placeHeroImg.alt = p.title || '';
+
+      placeHeroTitle.textContent = p.title || '';
+      placeHeroAddress.textContent = p.address || '';
+
+      placeHeroTag.textContent = p.tag || '';
+      placeHeroTag.style.display = p.tag ? '' : 'none';
+
+      if (p.link) {
+        placeHeroLink.href = p.link;
+        placeHeroLink.style.display = '';
+      } else {
+        placeHeroLink.style.display = 'none';
       }
 
-      // Фоллбек
-      window.open(url, '_blank', 'noopener');
+      const rect = fromEl.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Масштаб до размера маркера относительно окна
+      // place-hero занимает весь viewport, значит scale должен сжать его до rect
+      const startScaleX = rect.width / vw;
+      const startScaleY = rect.height / vh;
+
+      const startX = rect.left;
+      const startY = rect.top;
+
+      // Подготовка
+      placeModal.classList.add('is-open');
+      placeModal.setAttribute('aria-hidden', 'false');
+      isModalOpen = true;
+
+      // На старте — убираем переходы, чтобы задать стартовое положение мгновенно
+      placeHero.style.transition = 'none';
+      placeHero.style.borderRadius = '10px';
+
+      // Стартовая позиция/масштаб “из маркера”
+      placeHero.style.transform = `translate(${startX}px, ${startY}px) scale(${startScaleX}, ${startScaleY})`;
+
+      // Форсим layout, чтобы гарантировать применение transform перед анимацией
+      placeHero.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        // Включаем transition и разворачиваем на весь экран
+        placeHero.style.transition =
+          'transform 320ms cubic-bezier(.2,.9,.2,1), border-radius 320ms cubic-bezier(.2,.9,.2,1)';
+        placeHero.style.borderRadius = '0px';
+        placeHero.style.transform = 'translate(0px, 0px) scale(1, 1)';
+      });
     }
 
-    // Диагностика: если maplibregl не загрузился — станет понятно сразу
+    function closePlaceModal() {
+      if (!isModalOpen) return;
+
+      placeModal.classList.remove('is-open');
+      placeModal.setAttribute('aria-hidden', 'true');
+      isModalOpen = false;
+    }
+
+    placeModalClose.addEventListener('click', closePlaceModal);
+    placeModal.addEventListener('click', (e) => {
+      if (e.target === placeModal) closePlaceModal();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePlaceModal();
+    });
+
+    // ========= Map =========
     if (typeof maplibregl === 'undefined') {
       console.error('maplibregl is not defined. Check Network for the unpkg script URL.');
       throw new Error('maplibregl missing');
     }
 
-    // Карта
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -153,30 +333,19 @@
     map.on('load', () => console.log('Map loaded OK'));
     map.on('error', (e) => console.error('Map error:', e?.error || e));
 
-    // Одна делегированная обработка на клик по ссылке “Открыть пост”
-    document.addEventListener('click', (e) => {
-      const a = e.target && e.target.closest ? e.target.closest('.js-open-post') : null;
-      if (!a) return;
-
-      const url = a.getAttribute('data-link');
-      if (!url) return;
-
-      e.preventDefault();
-      showOverlayAndHideMap();
-      openPostLink(url);
-    });
-
     // Попапы и маркеры
     for (const p of PLACES) {
       const el = createMarkerElement(p.image);
+      el.style.cursor = 'pointer';
 
+      // (Опционально) оставляем popup как подсказку при ховере/тапе
       const popupHtml = `
         <div class="popup-title">${escapeHtml(p.title || '')}</div>
         <div>${escapeHtml(p.address || '')}</div>
         ${p.tag ? `<div>${escapeHtml(p.tag)}</div>` : ''}
         ${
           p.link
-            ? `<a class="popup-link js-open-post" href="${escapeAttr(p.link)}" data-link="${escapeAttr(p.link)}">Открыть пост</a>`
+            ? `<a class="popup-link" target="_blank" rel="noopener" href="${escapeAttr(p.link)}">Открыть пост</a>`
             : ''
         }
       `;
@@ -187,6 +356,13 @@
         .setLngLat([p.lng, p.lat])
         .setPopup(popup)
         .addTo(map);
+
+      // Главное: клик открывает fullscreen hero с анимацией “с маркера”
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        openPlaceModal(p, el);
+      });
     }
   </script>
 </body>
